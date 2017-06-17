@@ -9,5 +9,6 @@ services:
       - .:/opt/go/src/local/myorg/myapp
     ports:
       - "2345:2345"
+      - "8080:8080"
     expose:
       - "2345"
