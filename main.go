@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,10 +9,6 @@ import (
 
 const defaultConfFile = "settings.yaml"
 const defaultPort = "8080"
-
-type msg struct {
-	Message string `json:"msg"` //= {"msg":"Hi"}
-}
 
 func main() {
 
@@ -38,10 +33,16 @@ func main() {
 	log.Printf("Loading config file %s", confFile)
 	log.Printf("Opening port %s", port)
 
+	conf, err := loadConf(confFile)
+
+	if err != nil {
+		log.Fatalf("Failed to load conf.  Aborting startup. #%v", err)
+		return
+	}
+
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewEncoder(w).Encode(&msg{Message: "Hello Golang UK Conf"}); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		w.Write([]byte(conf.region))
+		//http.Error(w, err.Error(), http.StatusInternalServerError)
 	})
 
 	log.Fatalln(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
