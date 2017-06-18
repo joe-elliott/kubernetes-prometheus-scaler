@@ -33,17 +33,14 @@ func main() {
 	log.Printf("Loading config file %s", confFile)
 	log.Printf("Opening port %s", port)
 
-	conf, err := loadConf(confFile)
+	cfg, err := loadConf(confFile)
 
 	if err != nil {
 		log.Fatalf("Failed to load conf.  Aborting startup. #%v", err)
 		return
 	}
 
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(conf.Region))
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-	})
+	http.HandleFunc("/metrics", metricsEndpoint(cfg))
 
 	log.Fatalln(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
