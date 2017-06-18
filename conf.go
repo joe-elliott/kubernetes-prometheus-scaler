@@ -45,9 +45,7 @@ func loadConf(file string) (GlobalConfig, error) {
 	return conf, nil
 }
 
-/*
-// custom marshalling to set defaults
-func (m *MetricConfig) UnmarshalYAML(data []byte) error {
+func (m *MetricConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type mcAlias MetricConfig
 	conf := &mcAlias{
 		Namespace:            "",
@@ -61,9 +59,24 @@ func (m *MetricConfig) UnmarshalYAML(data []byte) error {
 		PeriodSeconds:        -1,
 	}
 
-	_ = json.Unmarshal(data, conf)
+	err := unmarshal(conf)
 
 	*m = MetricConfig(*conf)
-	return nil
+	return err
 }
-*/
+
+func (c *GlobalConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type gcAlias GlobalConfig
+	conf := &gcAlias{
+		Region:        "",
+		Metrics:       nil,
+		DelaySeconds:  -1,
+		RangeSeconds:  -1,
+		PeriodSeconds: -1,
+	}
+
+	err := unmarshal(conf)
+
+	*c = GlobalConfig(*conf)
+	return err
+}
