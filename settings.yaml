@@ -1,1 +1,19 @@
 region: us-east-1
+delay_seconds: 60
+range_seconds: 60
+period_seconds: 60
+metrics:
+  - namespace: "AWS/ELB"
+    name: "test"
+    dimensions: ["a", "b"]
+    dimension_select:
+      a: b
+      c: d
+    dimension_select_regex:
+      e: f
+      g: h
+    statistics: ["sum", "min"]
+    delay_seconds: 30
+    range_seconds: 30
+    period_seconds: 60
+  - namespace: "AWS/ELB"

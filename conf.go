@@ -6,29 +6,29 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type globalConfig struct {
-	region        string
-	metrics       []metricConfig
-	delaySeconds  int // 600
-	rangeSeconds  int // 600
-	periodSeconds int // 60
+type GlobalConfig struct {
+	Region        string
+	Metrics       []MetricConfig
+	DelaySeconds  int `yaml:"delay_seconds"`
+	RangeSeconds  int `yaml:"range_seconds"`
+	PeriodSeconds int `yaml:"period_seconds"`
 }
 
-type metricConfig struct {
-	namespace            string
-	name                 string
-	dimensions           []string
-	dimensionSelect      map[string]string
-	dimensionSelectRegex map[string]string
-	statistics           []string
-	delaySeconds         int
-	rangeSeconds         int
-	periodSeconds        int
+type MetricConfig struct {
+	Namespace            string
+	Name                 string
+	Dimensions           []string
+	DimensionSelect      map[string]string `yaml:"dimension_select"`
+	DimensionSelectRegex map[string]string `yaml:"dimension_select_regex"`
+	Statistics           []string
+	DelaySeconds         int `yaml:"delay_seconds"`
+	RangeSeconds         int `yaml:"range_seconds"`
+	PeriodSeconds        int `yaml:"period_seconds"`
 }
 
-func loadConf(file string) (globalConfig, error) {
+func loadConf(file string) (GlobalConfig, error) {
 
-	conf := globalConfig{}
+	var conf GlobalConfig
 
 	data, err := ioutil.ReadFile(file)
 
@@ -44,3 +44,26 @@ func loadConf(file string) (globalConfig, error) {
 
 	return conf, nil
 }
+
+/*
+// custom marshalling to set defaults
+func (m *MetricConfig) UnmarshalYAML(data []byte) error {
+	type mcAlias MetricConfig
+	conf := &mcAlias{
+		Namespace:            "",
+		Name:                 "",
+		Dimensions:           nil,
+		DimensionSelect:      nil,
+		DimensionSelectRegex: nil,
+		Statistics:           nil,
+		DelaySeconds:         -1,
+		RangeSeconds:         -1,
+		PeriodSeconds:        -1,
+	}
+
+	_ = json.Unmarshal(data, conf)
+
+	*m = MetricConfig(*conf)
+	return nil
+}
+*/

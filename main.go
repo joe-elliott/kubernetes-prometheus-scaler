@@ -41,7 +41,7 @@ func main() {
 	}
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(conf.region))
+		w.Write([]byte(conf.Region))
 		//http.Error(w, err.Error(), http.StatusInternalServerError)
 	})
 
