@@ -54,9 +54,9 @@ func (m *MetricConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		DimensionSelect:      nil,
 		DimensionSelectRegex: nil,
 		Statistics:           nil,
-		DelaySeconds:         -1,
-		RangeSeconds:         -1,
-		PeriodSeconds:        -1,
+		DelaySeconds:         600,
+		RangeSeconds:         600,
+		PeriodSeconds:        60,
 	}
 
 	err := unmarshal(conf)

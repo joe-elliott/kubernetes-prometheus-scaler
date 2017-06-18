@@ -10,6 +10,8 @@ import (
 
 	"regexp"
 
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 )
@@ -17,22 +19,49 @@ import (
 func metricsEndpoint(cfg GlobalConfig) func(http.ResponseWriter, *http.Request) {
 
 	sess := session.Must(session.NewSession())
+
+	sess.Config.Region = &cfg.Region
+
 	svc := cloudwatch.New(sess)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		hasError := false
+		start := time.Now()
 
 		for _, metricCfg := range cfg.Metrics {
+
+			periodSeconds := getConfigValue(cfg.PeriodSeconds, metricCfg.PeriodSeconds)
+			delaySeconds := getConfigValue(cfg.DelaySeconds, metricCfg.DelaySeconds)
+			rangeSeconds := getConfigValue(cfg.RangeSeconds, metricCfg.RangeSeconds)
+
+			now := time.Now()
+			startTime := now.Add(time.Duration(delaySeconds) * time.Second)
+			endTime := now.Add(time.Duration(delaySeconds+rangeSeconds) * time.Second)
+			period := int64(periodSeconds)
+
+			dimensions := []*cloudwatch.Dimension{}
+
+			for _, dim := range metricCfg.Dimensions {
+				dimensions = append(dimensions, &cloudwatch.Dimension{
+					Name:  &dim,
+					Value: nil,
+				})
+			}
+
+			statistics := []*string{}
+			for _, stat := range metricCfg.Statistics {
+				statistics = append(statistics, &stat)
+			}
 
 			input := &cloudwatch.GetMetricStatisticsInput{
 				Namespace:          &metricCfg.Namespace,
 				MetricName:         &metricCfg.Name,
 				Dimensions:         nil,
-				StartTime:          nil,
-				EndTime:            nil,
-				Period:             nil,
-				Statistics:         nil,
+				StartTime:          &startTime,
+				EndTime:            &endTime,
+				Period:             &period,
+				Statistics:         statistics,
 				ExtendedStatistics: nil,
 			}
 			output, err := svc.GetMetricStatistics(input)
@@ -45,9 +74,14 @@ func metricsEndpoint(cfg GlobalConfig) func(http.ResponseWriter, *http.Request) 
 					"job": safeName(metricCfg.Namespace),
 				}
 
-				writeSingleMetric(getMetricName(metricCfg), labels, strconv.FormatFloat(*output.Datapoints[0].Sum, 'f', -1, 64), w)
+				for _, datapoint := range output.Datapoints {
+					writeSingleMetric(getMetricName(metricCfg), labels, getMetricVal(*datapoint.Minimum), w)
+				}
 			}
 		}
+
+		//scrape time
+		writeSingleMetric("cloudwatch_exporter_scrape_duration_seconds", nil, getMetricVal(time.Since(start).Seconds()), w)
 
 		//error
 		if hasError {
@@ -56,6 +90,10 @@ func metricsEndpoint(cfg GlobalConfig) func(http.ResponseWriter, *http.Request) 
 			writeSingleMetric("cloudwatch_exporter_scrape_error", nil, "0", w)
 		}
 	}
+}
+
+func getMetricVal(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
 }
 
 func getMetricName(cfg MetricConfig) string {
@@ -83,6 +121,14 @@ func toSnakeCase(s string) string {
 	s = reg.ReplaceAllString(s, "$1_$2")
 
 	return s
+}
+
+func getConfigValue(global int, local int) int {
+	if local == -1 {
+		return global
+	}
+
+	return local
 }
 
 func writeSingleMetric(name string, labels map[string]string, value string, writer http.ResponseWriter) {

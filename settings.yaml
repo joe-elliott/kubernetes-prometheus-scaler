@@ -12,7 +12,7 @@ metrics:
     dimension_select_regex:
       e: f
       g: h
-    statistics: ["sum", "min"]
+    statistics: ["Minimum", "Sum"]
     delay_seconds: 30
     range_seconds: 30
     period_seconds: 60
