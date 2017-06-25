@@ -24,4 +24,9 @@ while kubectl get svc go-debug-svc > /dev/null; do :; done
 kubectl create -f ./debug.podspec.yml
 
 # display to the user the endpoints to put in launch.json
+
+echo "The following endpoints are exposed on your pod."
+echo " - 30080 is mapped to 8080 in your container and is useful only if your application provides a service on a port.  Adjust the podspec as necessary to expose other ports or hide this one."
+echo " - 32345 is necessary for vscode to connect to the dlv debugger.  You may need to adjust the IP in launch.json if the below doesn't match."
+
 minikube service go-debug-svc --url
