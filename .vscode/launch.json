@@ -2,14 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceRoot}"
-        },
-        {
-            "name": "Remote Docker",
+            "name": "Remote Minikube",
             "type": "go",
             "request": "launch",
             "mode": "remote",
@@ -18,7 +11,15 @@
             "host": "192.168.99.100",
             "program": "${workspaceRoot}",
             "env": {},
-            "args": []
+            "args": [],
+            "preLaunchTask": "deployToMinikube"
+        },
+        {
+            "name": "Launch Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}"
         }
     ]
 }
