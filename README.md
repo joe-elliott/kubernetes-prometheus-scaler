@@ -15,4 +15,5 @@ This repo is a template to get started writing golang applications designed to r
 
 ### Issues/Improvements
 
-- Figure out how to get application output printed into the vscode debug console
+- Print application output into vscode debug console
+- Occassionally the pod/container fail to terminate. 
