@@ -27,7 +27,7 @@ spec:
     - name: go-debug
       image: go-app:debug
       command: ['dlv']
-      args: ["debug", "local/myorg/myapp", "--listen=0.0.0.0:2345", "--headless=true", "--log=true"]
+      args: ["debug", "local/myorg/myapp/src", "--listen=0.0.0.0:2345", "--headless=true", "--log=true"]
       ports:
       - containerPort: 8080
         protocol: TCP
