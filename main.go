@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/golang/glog"
 )
 
 func main() {
-	fmt.Println("Debug Application Staring")
+	glog.Info("Debug Application Staring")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello debugging world"))
