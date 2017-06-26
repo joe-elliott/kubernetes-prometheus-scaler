@@ -5,9 +5,6 @@
     "command": "${workspaceRoot}/.debug/debug.sh",
     "isShellCommand": true,
     "showOutput": "always",
-    "options": {
-        "cwd": "${workspaceRoot}/.debug"
-    },
     "tasks": [
         { 
             "taskName": "deployToMinikube",

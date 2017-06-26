@@ -21,12 +21,12 @@ eval $(minikube docker-env)
 
 # build the debug image
 echo "***Building Image***"
-docker build .. -t go-app:debug -f debug.Dockerfile
+docker build . -t go-app:debug -f ./.debug/debug.Dockerfile
 
 # delete old stuff
 echo "***Cleaning Up Old Service/Pod***"
-kubectl delete po go-debug
-kubectl delete svc go-debug-svc
+kubectl delete po go-debug --ignore-not-found=true
+kubectl delete svc go-debug-svc --ignore-not-found=true
 
 #wait for stuff to be deleted
 while kubectl get po go-debug > /dev/null; do :; done
@@ -34,7 +34,7 @@ while kubectl get svc go-debug-svc > /dev/null; do :; done
 
 # make the new stuff
 echo "***Installing New Service/Pod***"
-kubectl create -f ./debug.podspec.yml
+kubectl create -f ./.debug/debug.podspec.yml
 
 # display to the user the endpoints to put in launch.json
 
