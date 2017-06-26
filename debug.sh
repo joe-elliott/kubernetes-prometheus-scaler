@@ -7,6 +7,13 @@ if [ $? -ne 0 ]; then
   minikube start
 fi
 
+# build application
+echo "***Building Go Application***"
+export GO=CGO_ENABLED=0 
+export GOOS=linux 
+export GOARCH=amd64
+go build -o main main.go 
+
 # sets the docker env to point at minikube so the images we build will be available in minikube
 echo "***Configuring Docker to Use Minikube***"
 eval $(minikube docker-env)

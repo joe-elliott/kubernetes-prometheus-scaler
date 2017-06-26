@@ -6,7 +6,8 @@ ENV GOPATH=/opt/go:$GOPATH \
 # snag delve
 RUN go get github.com/derekparker/delve/cmd/dlv
 
-# copy code in
-ADD . /opt/go/src/local/myorg/myapp
-WORKDIR /opt/go/src/local/myorg/myapp 
+# copy binary in
+COPY ./main /usr/local/bin
+WORKDIR /usr/local/bin
 
+CMD ["./main"]
