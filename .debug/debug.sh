@@ -20,7 +20,7 @@ eval $(minikube docker-env)
 
 # build the debug image
 echo "***Building Image***"
-docker build . -t go-app:debug -f debug.Dockerfile
+docker build .. -t go-app:debug -f debug.Dockerfile
 
 # delete old stuff
 echo "***Cleaning Up Old Service/Pod***"
