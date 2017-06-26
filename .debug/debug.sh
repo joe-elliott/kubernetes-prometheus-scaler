@@ -4,6 +4,7 @@
 minikube ip > /dev/null
 if [ $? -ne 0 ]; then
   echo "***Launching Minikube***"
+  echo "  One time process.  This may take a bit..."
   minikube start
 fi
 
