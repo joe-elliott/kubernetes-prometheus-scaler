@@ -1,0 +1,7 @@
+{
+    "files.exclude": {
+        "debug": true,
+        "main": true,
+        "glide.lock": true
+    }
+}
