@@ -9,7 +9,6 @@ import (
 
 func main() {
 	glog.Info("Debug Application Staring")
-	log.Printf("test")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello debugging world"))
