@@ -1,3 +1,5 @@
 *
 **/*
-!main
+!main.go
+!src
+!vendor

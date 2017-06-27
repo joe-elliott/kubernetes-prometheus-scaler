@@ -7,7 +7,8 @@ ENV GOPATH=/opt/go:$GOPATH \
 RUN go get github.com/derekparker/delve/cmd/dlv
 
 # copy binary in
-COPY ./main /usr/local/bin
-WORKDIR /usr/local/bin
+ADD . /opt/go/src/local/myorg/myapp
+WORKDIR /opt/go/src/local/myorg/myapp 
 
+RUN go build -o main main.go
 CMD ["./main"]
