@@ -21,4 +21,10 @@ This repo is a template to get started writing golang applications designed to r
 ### Issues/Improvements
 
 - Print application output into vscode debug console
-- Occassionally the pod/container fail to terminate. 
+- Occassionally the pod/container fail to terminate.  (Stopping Minikube VM is the best way I've found to fix this)
+- Windows support
+- Use `kubectl port-forward` to expose 2345 on localhost
+- Add example usage of ./src directory
+- Cleanup/Replace pods better
+- Wait for build to finish in the container before returning from debug.sh
+- Remove build line in dockerfile?  I don't think it's needed
