@@ -43,3 +43,7 @@ echo " - 30080 is mapped to 8080 in your container and is useful only if your ap
 echo " - 32345 is necessary for vscode to connect to the dlv debugger.  You may need to adjust the IP in launch.json if the below doesn't match."
 
 minikube service go-debug-svc --url
+
+echo "***Waiting for Build to Finish***"
+
+until kubectl logs go-debug | grep "API server listening at:" > /dev/null; do sleep 1; done

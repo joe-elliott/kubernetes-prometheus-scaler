@@ -27,6 +27,5 @@ This repo is a template to get started writing golang applications designed to r
 - Use `kubectl port-forward` to expose 2345 on localhost
 - Add example usage of ./src directory
 - Cleanup/Replace pods better
-- Wait for build to finish in the container before returning from debug.sh
 - Remove build line in dockerfile?  I don't think it's needed
 - Try to use telepresence.io?
