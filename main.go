@@ -5,12 +5,20 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 )
 
+const DeploymentLabelSelector = "scale==prometheus"
+const DeploymentAnnotationPrometheusQuery = "prometheusScaler/prometheus-query"
+const DeploymentAnnotationMinScale = "prometheusScaler/min-scale"
+const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
+
 func main() {
+
+	//checkSeconds := 10
+	//deploymentLabel := "scale"
+
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -21,27 +29,36 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+
 	for {
-		pods, err := clientset.CoreV1().Pods("").List(v1.ListOptions{})
+		deployments, err := clientset.Extensions().Deployments("").List(v1.ListOptions{
+			LabelSelector: DeploymentLabelSelector,
+		})
 		if err != nil {
 			panic(err.Error())
 		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+		fmt.Printf("Found %d deployments\n", len(deployments.Items))
 
-		// Examples for error handling:
-		// - Use helper functions like e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		_, err = clientset.CoreV1().Pods("default").Get("example-xxxxx")
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod not found\n")
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found pod\n")
+		for _, deployment := range deployments.Items {
+			// element is the element from someSlice for where we are
+			fmt.Printf("name: %v\n", deployment.Name)
 		}
 
+		/*
+			// Examples for error handling:
+			// - Use helper functions like e.g. errors.IsNotFound()
+			// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+			_, err = clientset.CoreV1().Pods("default").Get("example-xxxxx")
+			if errors.IsNotFound(err) {
+				fmt.Printf("Pod not found\n")
+			} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+				fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
+			} else if err != nil {
+				panic(err.Error())
+			} else {
+				fmt.Printf("Found pod\n")
+			}
+		*/
 		time.Sleep(10 * time.Second)
 	}
 }
