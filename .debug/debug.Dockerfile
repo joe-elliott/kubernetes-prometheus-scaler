@@ -10,5 +10,4 @@ RUN go get github.com/derekparker/delve/cmd/dlv
 ADD . /opt/go/src/local/myorg/myapp
 WORKDIR /opt/go/src/local/myorg/myapp 
 
-RUN go build -o main main.go
-CMD ["./main"]
+CMD ["bash"]
