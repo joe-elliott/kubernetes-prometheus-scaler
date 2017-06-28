@@ -8,6 +8,7 @@ This repo is a template to get started writing golang applications designed to r
 2. Make sure that the "Remote Minikube" launch configuration is selected in vscode
 4. Set a breakpoint or whatever
 5. F5
+6. Unfortunately debug out isn't printing into the console.  You can use `kubectl logs go-debug --tail=30 --follow` as a substitute for now.
 
 ### How it works
 
@@ -28,3 +29,4 @@ This repo is a template to get started writing golang applications designed to r
 - Cleanup/Replace pods better
 - Wait for build to finish in the container before returning from debug.sh
 - Remove build line in dockerfile?  I don't think it's needed
+- Try to use telepresence.io?
