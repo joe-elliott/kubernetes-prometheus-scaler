@@ -1,18 +1,47 @@
 package main
 
 import (
-	"log"
-	"net/http"
+	"fmt"
+	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/rest"
 )
 
 func main() {
-	glog.Info("Debug Application Staring")
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+	for {
+		pods, err := clientset.CoreV1().Pods("").List(v1.ListOptions{})
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello debugging world"))
-	})
+		// Examples for error handling:
+		// - Use helper functions like e.g. errors.IsNotFound()
+		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+		_, err = clientset.CoreV1().Pods("default").Get("example-xxxxx")
+		if errors.IsNotFound(err) {
+			fmt.Printf("Pod not found\n")
+		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+			fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
+		} else if err != nil {
+			panic(err.Error())
+		} else {
+			fmt.Printf("Found pod\n")
+		}
 
-	log.Fatalln(http.ListenAndServe(":8080", nil))
+		time.Sleep(10 * time.Second)
+	}
 }
