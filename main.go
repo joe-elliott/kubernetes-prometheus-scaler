@@ -80,7 +80,9 @@ func main() {
 }
 
 func makeQueryFunc(url string) (func(query string) (float64, error), error) {
-	client, err := prometheus.New(prometheus.Config{})
+	client, err := prometheus.New(prometheus.Config{
+		Address: url,
+	})
 
 	if err != nil {
 		return nil, err
