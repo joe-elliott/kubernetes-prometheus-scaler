@@ -2,7 +2,6 @@
     "files.exclude": {
         "debug": true,
         "main": true,
-        "glide.lock": true,
-        "vendor": true
+        "glide.lock": true
     }
 }

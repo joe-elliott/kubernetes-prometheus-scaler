@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/prometheus/client_golang/api/prometheus"
+	"github.com/prometheus/common/model"
 )
 
 const DeploymentLabelSelector = "scale==prometheus"
@@ -22,6 +23,7 @@ const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
 func main() {
 
 	clientURL := "http://prometheus:9090"
+
 	query, err := makeQueryFunc(clientURL)
 	if err != nil {
 		panic(err.Error())
@@ -80,6 +82,7 @@ func main() {
 }
 
 func makeQueryFunc(url string) (func(query string) (float64, error), error) {
+
 	client, err := prometheus.New(prometheus.Config{
 		Address: url,
 	})
@@ -110,7 +113,13 @@ func makeQueryFunc(url string) (func(query string) (float64, error), error) {
 			return 0, errors.New("val is nil")
 		}
 
-		res, err := strconv.ParseFloat(val.String(), 64)
+		original, ok := val.(*model.Scalar)
+
+		if !ok {
+			return 0, fmt.Errorf("not a scalar %v", val)
+		}
+
+		res, err := strconv.ParseFloat(original.Value.String(), 64)
 
 		if err != nil {
 			return 0, err
