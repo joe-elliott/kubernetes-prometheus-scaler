@@ -1,5 +1,10 @@
+# glide up -v
+# http://labix.org/gopkg.in ?
+
 package: k8s-prometheus-autoscaler
 import:
 - package: k8s.io/client-go
   version: v2.0.0
-- package: github.com/golang/glog
+- package: github.com/prometheus/client_golang
+  version: v0.8.0
+#- package: github.com/golang/glog

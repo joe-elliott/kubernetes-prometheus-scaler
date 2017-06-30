@@ -1,5 +1,5 @@
-hash: 33f84573d3d26e402bc5678ea07fc300ac5a7606c258a0a434d891643d5eb654
-updated: 2017-06-27T21:38:22.021924727-04:00
+hash: c2e93c6eb4b083bb5031fde6875f509ebeac413940dfe11c5479bfc67a5beb9d
+updated: 2017-06-29T12:33:01.367451004-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -71,6 +71,14 @@ imports:
   - jwriter
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+- name: github.com/prometheus/client_golang
+  version: c5b7fccd204277076155f10851dad72b76a49317
+  subpackages:
+  - api/prometheus
+- name: github.com/prometheus/common
+  version: 0866df4b85a18d652b6965be022d007cdf076822
+  subpackages:
+  - model
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
