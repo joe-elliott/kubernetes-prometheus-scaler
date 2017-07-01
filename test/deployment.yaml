@@ -5,7 +5,11 @@ metadata:
   labels:
     scale: prometheus
   annotations:
-    
+    prometheusScaler/prometheus-query: "time() % (60 * 60)"
+    prometheusScaler/min-scale: "2"
+    prometheusScaler/max-scale: "5"
+    prometheusScaler/scale-up-when: ">10"
+    prometheusScaler/scale-down-when: "<50"
 spec:
   replicas: 1
   template:

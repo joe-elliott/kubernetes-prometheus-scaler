@@ -11,20 +11,24 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 
+	"github.com/Knetic/govaluate"
 	"github.com/prometheus/client_golang/api/prometheus"
 	"github.com/prometheus/common/model"
 )
 
 const DeploymentLabelSelector = "scale==prometheus"
+
 const DeploymentAnnotationPrometheusQuery = "prometheusScaler/prometheus-query"
 const DeploymentAnnotationMinScale = "prometheusScaler/min-scale"
 const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
+const DeploymentAnnotationScaleUpWhen = "prometheusScaler/scale-up-when"
+const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
 func main() {
 
 	clientURL := "http://prometheus:9090"
 
-	query, err := makeQueryFunc(clientURL)
+	promQuery, err := makeQueryFunc(clientURL)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -52,14 +56,43 @@ func main() {
 		for _, deployment := range deployments.Items {
 			// element is the element from someSlice for where we are
 			fmt.Printf("name: %v\n", deployment.Name)
-		}
 
-		val, err := query("time() % (60 * 60)")
+			query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
+			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 64)
+			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 64)
+			scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
+			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 
-		if err != nil {
-			fmt.Printf("err: %v\n", err)
-		} else {
-			fmt.Printf("query: %f \n", val)
+			// todo figure out where to find this
+			replicaCount := int64(5)
+
+			fmt.Printf("query: %v \n", query)
+
+			val, err := promQuery(query)
+
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+			}
+
+			fmt.Printf("val: %f \n", val)
+			fmt.Printf("scaleUpWhen: %v \n", scaleUpWhen)
+			fmt.Printf("scaleDownWhen: %v \n", scaleDownWhen)
+
+			strVal := strconv.FormatFloat(val, 'E', -1, 64)
+			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(strVal + scaleUpWhen)
+			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(strVal + scaleDownWhen)
+
+			scaleUp, err := exprScaleUpWhen.Evaluate(nil)
+			scaleDown, err := exprScaleDownWhen.Evaluate(nil)
+
+			if scaleUp == true && replicaCount < maxScale {
+				replicaCount++
+			}
+			if scaleDown == true && replicaCount > minScale {
+				replicaCount--
+			}
+
+			fmt.Printf("Setting replica count to %d", replicaCount)
 		}
 
 		/*
