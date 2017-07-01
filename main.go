@@ -65,7 +65,7 @@ func main() {
 
 			replicaCount := deployment.Spec.Replicas
 
-			fmt.Printf("current replica count: %v \n", replicaCount)
+			fmt.Printf("current replica count: %v \n", *replicaCount)
 			fmt.Printf("query: %v \n", query)
 
 			val, err := promQuery(query)
@@ -95,8 +95,13 @@ func main() {
 				*replicaCount--
 			}
 
-			//todo figure out how to do this
+			// set the replica set
 			fmt.Printf("Setting replica count to %d\n", *replicaCount)
+			_, err = clientset.Extensions().Deployments(deployment.Namespace).Update(&deployment)
+
+			if err != nil {
+				fmt.Printf("Error scaling: %v\n", err)
+			}
 		}
 
 		/*
