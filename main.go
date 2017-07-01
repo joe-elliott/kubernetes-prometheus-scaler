@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 
@@ -63,9 +64,9 @@ func main() {
 			scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
 			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 
-			replicaCount := deployment.Spec.Replicas
+			replicaCount := int64(*deployment.Spec.Replicas)
 
-			fmt.Printf("current replica count: %v \n", *replicaCount)
+			fmt.Printf("current replica count: %v \n", replicaCount)
 			fmt.Printf("query: %v \n", query)
 
 			val, err := promQuery(query)
@@ -88,16 +89,18 @@ func main() {
 			fmt.Printf("scaleUp: %v \n", scaleUp)
 			fmt.Printf("scaleDown: %v \n", scaleDown)
 
-			if scaleUp == true && *replicaCount < int32(maxScale) {
-				*replicaCount++
+			if scaleUp == true && replicaCount < maxScale {
+				replicaCount++
 			}
-			if scaleDown == true && *replicaCount > int32(minScale) {
-				*replicaCount--
+			if scaleDown == true && replicaCount > minScale {
+				replicaCount--
 			}
 
 			// set the replica set
-			fmt.Printf("Setting replica count to %d\n", *replicaCount)
-			_, err = clientset.Extensions().Deployments(deployment.Namespace).Update(&deployment)
+			fmt.Printf("Setting replica count to %d\n", replicaCount)
+			jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(replicaCount, 10) + " }]"
+			fmt.Printf("Patch string: %v\n", jsonPatch)
+			_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
 
 			if err != nil {
 				fmt.Printf("Error scaling: %v\n", err)
