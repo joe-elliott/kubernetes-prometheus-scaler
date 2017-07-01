@@ -58,14 +58,14 @@ func main() {
 			fmt.Printf("name: %v\n", deployment.Name)
 
 			query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
-			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 64)
-			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 64)
+			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
+			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
 			scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
 			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 
-			// todo figure out where to find this
-			replicaCount := int64(3)
+			replicaCount := deployment.Spec.Replicas
 
+			fmt.Printf("current replica count: %v \n", replicaCount)
 			fmt.Printf("query: %v \n", query)
 
 			val, err := promQuery(query)
@@ -88,15 +88,15 @@ func main() {
 			fmt.Printf("scaleUp: %v \n", scaleUp)
 			fmt.Printf("scaleDown: %v \n", scaleDown)
 
-			if scaleUp == true && replicaCount < maxScale {
-				replicaCount++
+			if scaleUp == true && *replicaCount < int32(maxScale) {
+				*replicaCount++
 			}
-			if scaleDown == true && replicaCount > minScale {
-				replicaCount--
+			if scaleDown == true && *replicaCount > int32(minScale) {
+				*replicaCount--
 			}
 
 			//todo figure out how to do this
-			fmt.Printf("Setting replica count to %d\n", replicaCount)
+			fmt.Printf("Setting replica count to %d\n", *replicaCount)
 		}
 
 		/*
