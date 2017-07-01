@@ -122,7 +122,7 @@ func main() {
 				fmt.Printf("Found pod\n")
 			}
 		*/
-		time.Sleep(10 * time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
 
