@@ -64,7 +64,7 @@ func main() {
 			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 
 			// todo figure out where to find this
-			replicaCount := int64(5)
+			replicaCount := int64(3)
 
 			fmt.Printf("query: %v \n", query)
 
@@ -78,12 +78,15 @@ func main() {
 			fmt.Printf("scaleUpWhen: %v \n", scaleUpWhen)
 			fmt.Printf("scaleDownWhen: %v \n", scaleDownWhen)
 
-			strVal := strconv.FormatFloat(val, 'E', -1, 64)
+			strVal := strconv.FormatFloat(val, 'f', -1, 64)
 			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(strVal + scaleUpWhen)
 			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(strVal + scaleDownWhen)
 
 			scaleUp, err := exprScaleUpWhen.Evaluate(nil)
 			scaleDown, err := exprScaleDownWhen.Evaluate(nil)
+
+			fmt.Printf("scaleUp: %v \n", scaleUp)
+			fmt.Printf("scaleDown: %v \n", scaleDown)
 
 			if scaleUp == true && replicaCount < maxScale {
 				replicaCount++
@@ -92,7 +95,8 @@ func main() {
 				replicaCount--
 			}
 
-			fmt.Printf("Setting replica count to %d", replicaCount)
+			//todo figure out how to do this
+			fmt.Printf("Setting replica count to %d\n", replicaCount)
 		}
 
 		/*
