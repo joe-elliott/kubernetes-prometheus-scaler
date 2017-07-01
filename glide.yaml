@@ -7,4 +7,6 @@ import:
   version: v2.0.0
 - package: github.com/prometheus/client_golang
   version: v0.8.0
+- package: github.com/Knetic/govaluate
+  version: v3.0.0
 #- package: github.com/golang/glog

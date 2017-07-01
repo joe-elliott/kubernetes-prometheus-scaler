@@ -4,6 +4,8 @@ metadata:
   name: scale-deployment
   labels:
     scale: prometheus
+  annotations:
+    
 spec:
   replicas: 1
   template:
