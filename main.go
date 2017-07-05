@@ -27,7 +27,7 @@ const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
 func main() {
 
-	clientURL := "http://prometheus:9090"
+	clientURL := "http://prometheus.default.svc.cluster.local:9090"
 
 	promQuery, err := makeQueryFunc(clientURL)
 	if err != nil {
