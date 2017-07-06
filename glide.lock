@@ -1,5 +1,5 @@
-hash: c79f668a74833ecca22d0e0708f0e8087f7c07a303d108e75faf0903fb93fc97
-updated: 2017-06-30T22:46:02.242865979-04:00
+hash: a78a7c32392c7df65e3422010c0894d746bd5a51053fb78058f0c3ee55e6a905
+updated: 2017-07-06T17:09:45.842194598-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -71,6 +71,8 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/prometheus/client_golang

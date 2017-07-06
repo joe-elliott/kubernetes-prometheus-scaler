@@ -13,9 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/Knetic/govaluate"
+	"github.com/op/go-logging"
 	"github.com/prometheus/client_golang/api/prometheus"
 	"github.com/prometheus/common/model"
 )
+
+const AppName = "prometheus-autoscaler"
 
 const DeploymentLabelSelector = "scale==prometheus"
 
@@ -25,24 +28,26 @@ const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
 const DeploymentAnnotationScaleUpWhen = "prometheusScaler/scale-up-when"
 const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
+var log = logging.MustGetLogger("prometheus-autoscaler")
+
 func main() {
 
 	clientURL := "http://prometheus:9090"
 
 	promQuery, err := makeQueryFunc(clientURL)
 	if err != nil {
-		panic(err.Error())
+		log.Criticalf("makeQueryFunc failed: %v", err)
 	}
 
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		log.Criticalf("rest.InClusterConfig failed: %v", err)
 	}
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		log.Criticalf("kubernetes.NewForConfig failed: %v", err)
 	}
 
 	for {
@@ -50,44 +55,84 @@ func main() {
 			LabelSelector: DeploymentLabelSelector,
 		})
 		if err != nil {
-			panic(err.Error())
+			log.Errorf("list deployments: %v", err)
+			continue
 		}
-		fmt.Printf("Found %d deployments\n", len(deployments.Items))
+
+		log.Infof("Considering %d deployments for scaling.", len(deployments.Items))
 
 		for _, deployment := range deployments.Items {
-			// element is the element from someSlice for where we are
-			fmt.Printf("name: %v\n", deployment.Name)
 
+			log.Infof("Considering: %v", deployment.Name)
+
+			// parse scaling parameters from deployment spec
 			query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
-			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
-			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
 			scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
 			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
+			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
 
+			if err != nil {
+				log.Errorf("  minScale: %v", err)
+				continue
+			}
+
+			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
+
+			if err != nil {
+				log.Errorf("  maxScale: %v", err)
+				continue
+			}
+
+			// get current state
 			replicaCount := int64(*deployment.Spec.Replicas)
 
-			fmt.Printf("current replica count: %v \n", replicaCount)
-			fmt.Printf("query: %v \n", query)
+			log.Infof("  current replica count: %v", replicaCount)
+			log.Infof("  query: %v", query)
 
+			// get and evaluate promQuery
 			val, err := promQuery(query)
 
 			if err != nil {
-				fmt.Printf("err: %v\n", err)
+				log.Errorf("promQuery: %v", err)
+				continue
 			}
 
-			fmt.Printf("val: %f \n", val)
-			fmt.Printf("scaleUpWhen: %v \n", scaleUpWhen)
-			fmt.Printf("scaleDownWhen: %v \n", scaleDownWhen)
+			log.Infof("  val: %f", val)
+			log.Infof("  scaleUpWhen: %v", scaleUpWhen)
+			log.Infof("  scaleDownWhen: %v", scaleDownWhen)
 
 			strVal := strconv.FormatFloat(val, 'f', -1, 64)
 			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(strVal + scaleUpWhen)
+
+			if err != nil {
+				log.Errorf("  exprScaleUpWhen: %v", err)
+				continue
+			}
+
 			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(strVal + scaleDownWhen)
 
+			if err != nil {
+				log.Errorf("  exprScaleDownWhen: %v", err)
+				continue
+			}
+
 			scaleUp, err := exprScaleUpWhen.Evaluate(nil)
+
+			if err != nil {
+				log.Errorf("  exprScaleUpWhen: %v", err)
+				continue
+			}
+
 			scaleDown, err := exprScaleDownWhen.Evaluate(nil)
 
-			fmt.Printf("scaleUp: %v \n", scaleUp)
-			fmt.Printf("scaleDown: %v \n", scaleDown)
+			if err != nil {
+				log.Errorf("  exprScaleDownWhen: %v", err)
+				continue
+			}
+
+			// scale up or down
+			log.Infof("  scaleUp: %v", scaleUp)
+			log.Infof("  scaleDown: %v", scaleDown)
 
 			if scaleUp == true && replicaCount < maxScale {
 				replicaCount++
@@ -97,13 +142,14 @@ func main() {
 			}
 
 			// set the replica set
-			fmt.Printf("Setting replica count to %d\n", replicaCount)
+			log.Infof("  Setting replica count to %d\n", replicaCount)
 			jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(replicaCount, 10) + " }]"
-			fmt.Printf("Patch string: %v\n", jsonPatch)
+			log.Infof("  Patch string: %v\n", jsonPatch)
 			_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
 
 			if err != nil {
-				fmt.Printf("Error scaling: %v\n", err)
+				log.Errorf("  Error scaling: %v", err)
+				continue
 			}
 		}
 
