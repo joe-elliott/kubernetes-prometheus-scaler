@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 
+	"os"
+
 	"github.com/Knetic/govaluate"
 	"github.com/op/go-logging"
 	"github.com/prometheus/client_golang/api/prometheus"
@@ -30,7 +32,16 @@ const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
+var format = logging.MustStringFormatter(
+	`%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{message}`,
+)
+
 func main() {
+
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	backendFormatted := logging.NewBackendFormatter(backend, format)
+
+	logging.SetBackend(backendFormatted)
 
 	clientURL := "http://prometheus:9090"
 
