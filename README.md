@@ -19,8 +19,8 @@ Add these annotations to control scaling:
     prometheusScaler/prometheus-query: "time() % (60 * 60)"
     prometheusScaler/min-scale: "2"
     prometheusScaler/max-scale: "5"
-    prometheusScaler/scale-up-when: ">10"
-    prometheusScaler/scale-down-when: "<50"
+    prometheusScaler/scale-up-when: ">50"
+    prometheusScaler/scale-down-when: "<10"
 ```
 
 Scale up and scale down conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is simply appended to the front.
