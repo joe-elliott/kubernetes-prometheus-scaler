@@ -2,7 +2,7 @@
 
 Scale deployments based on prometheus queries
 
-#### How to use
+### How to use
 
 Run this as a pod in your cluster.
 
@@ -25,12 +25,19 @@ Add these annotations to control scaling:
 
 Scale up and scale down conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is simply appended to the front.
 
-#### Improvements
+#### Command Line Usage
+
+```
+  -assessment-interval duration
+        Time to sleep between checking deployments. (default 1m0s)
+  -prometheus-url string
+        URL to query. (default "http://prometheus:9090")
+```
+
+### Improvements
 
 This repo is still under active development and needs a long list of improvements (but it works!).  Some obvious ones:
 
-- Configurable prometheus endpoint.  (Currently http://prometheus:9090)
-- Configurable sleep time.  (Currently 60s) 
 - General code refactoring/error handling
 - Better logging
 - Obvious Performance Improvements (Don't run scale up query if at max)

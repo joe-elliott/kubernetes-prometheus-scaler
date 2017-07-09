@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"strconv"
 	"time"
@@ -36,16 +37,22 @@ var format = logging.MustStringFormatter(
 	`%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{message}`,
 )
 
+var prometheusURL = flag.String("prometheus-url", "http://prometheus:9090", "URL to query.")
+var assessmentInterval = flag.Duration("assessment-interval", 60*time.Second, "Time to sleep between checking deployments.")
+
 func main() {
+
+	flag.Parse()
 
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
 	backendFormatted := logging.NewBackendFormatter(backend, format)
 
 	logging.SetBackend(backendFormatted)
 
-	clientURL := "http://prometheus:9090"
+	log.Infof("prometheus-url=%v", *prometheusURL)
+	log.Infof("assessment-interval=%v", *assessmentInterval)
 
-	promQuery, err := makeQueryFunc(clientURL)
+	promQuery, err := makeQueryFunc(*prometheusURL)
 	if err != nil {
 		log.Criticalf("makeQueryFunc failed: %v", err)
 	}
@@ -179,7 +186,7 @@ func main() {
 				fmt.Printf("Found pod\n")
 			}
 		*/
-		time.Sleep(60 * time.Second)
+		time.Sleep(*assessmentInterval)
 	}
 }
 
