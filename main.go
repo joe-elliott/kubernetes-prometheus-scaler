@@ -108,19 +108,19 @@ func main() {
 			log.Infof("  query: %v", query)
 
 			// get and evaluate promQuery
-			val, err := promQuery(query)
+			result, err := promQuery(query)
 
 			if err != nil {
 				log.Errorf("promQuery: %v", err)
 				continue
 			}
 
-			log.Infof("  result: %f", val)
+			log.Infof("  result: %f", result)
 			log.Infof("  scaleUpWhen: %v", scaleUpWhen)
 			log.Infof("  scaleDownWhen: %v", scaleDownWhen)
 
 			parameters := make(map[string]interface{}, 1)
-			parameters["result"] = val
+			parameters["result"] = result
 			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(scaleUpWhen)
 
 			if err != nil {

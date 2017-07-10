@@ -42,6 +42,5 @@ This repo is still under active development and needs a long list of improvement
 - Better logging
 - Obvious Performance Improvements (Don't run scale up query if at max)
 - Comments/documentation
-- Allow more expressive use of govaluate.  Additional variables?  Controlled placement of the query value?
 - Publish to docker hub once it sucks less
 - Refactor to use go funcs and channels?
