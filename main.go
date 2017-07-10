@@ -115,33 +115,34 @@ func main() {
 				continue
 			}
 
-			log.Infof("  val: %f", val)
+			log.Infof("  result: %f", val)
 			log.Infof("  scaleUpWhen: %v", scaleUpWhen)
 			log.Infof("  scaleDownWhen: %v", scaleDownWhen)
 
-			strVal := strconv.FormatFloat(val, 'f', -1, 64)
-			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(strVal + scaleUpWhen)
+			parameters := make(map[string]interface{}, 1)
+			parameters["result"] = val
+			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(scaleUpWhen)
 
 			if err != nil {
 				log.Errorf("  exprScaleUpWhen: %v", err)
 				continue
 			}
 
-			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(strVal + scaleDownWhen)
+			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(scaleDownWhen)
 
 			if err != nil {
 				log.Errorf("  exprScaleDownWhen: %v", err)
 				continue
 			}
 
-			scaleUp, err := exprScaleUpWhen.Evaluate(nil)
+			scaleUp, err := exprScaleUpWhen.Evaluate(parameters)
 
 			if err != nil {
 				log.Errorf("  exprScaleUpWhen: %v", err)
 				continue
 			}
 
-			scaleDown, err := exprScaleDownWhen.Evaluate(nil)
+			scaleDown, err := exprScaleDownWhen.Evaluate(parameters)
 
 			if err != nil {
 				log.Errorf("  exprScaleDownWhen: %v", err)

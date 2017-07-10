@@ -8,8 +8,8 @@ metadata:
     prometheusScaler/prometheus-query: "time() % 60"
     prometheusScaler/min-scale: "2"
     prometheusScaler/max-scale: "5"
-    prometheusScaler/scale-up-when: ">50"
-    prometheusScaler/scale-down-when: "<10"
+    prometheusScaler/scale-up-when: "result > 50"
+    prometheusScaler/scale-down-when: "result < 10"
 spec:
   replicas: 1
   template:
