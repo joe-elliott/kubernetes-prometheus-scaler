@@ -13,17 +13,32 @@ Add this label to deployments you want considered:
     scale: prometheus
 ```
 
-Add these annotations to control scaling:
+There are two different scaling strategies currently available.
+
+#### Step Scaling
+
+With step scaling you provide a query and two conditions.  The two conditions `scale-up-when` and `scale-down-when` are evaluated to determine whether or not the deployment should be scaled up or down by 1 replica.
 
 ```
-    prometheusScaler/prometheus-query: "time() % (60 * 60)"
+    prometheusScaler/prometheus-query: "time() % 60"
     prometheusScaler/min-scale: "2"
     prometheusScaler/max-scale: "5"
     prometheusScaler/scale-up-when: "result > 50"
     prometheusScaler/scale-down-when: "result < 10"
 ```
 
-Scale up and scale down conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is exposed to the expression as a parameter named `result`.
+#### Direct Scaling
+
+With direct scaling you provide a query and one condition.  The replica count is set to the value retrieved from evaluating the `scale-to` expression directly.
+
+```
+    prometheusScaler/prometheus-query: "time() % 60"
+    prometheusScaler/min-scale: "2"
+    prometheusScaler/max-scale: "5"
+    prometheusScaler/scale-to: "result"
+```
+
+Scale up, scale down and scale to conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is exposed to the expression as a parameter named `result`.
 
 #### Command Line Usage
 
@@ -38,9 +53,10 @@ Scale up and scale down conditions use this clever repo https://github.com/Kneti
 
 This repo is still under active development and needs a long list of improvements (but it works!).  Some obvious ones:
 
-- General code refactoring/error handling
 - Better logging
 - Obvious Performance Improvements (Don't run scale up query if at max)
 - Comments/documentation
 - Publish to docker hub once it sucks less
 - Refactor to use go funcs and channels?
+- Add more scaling strategies?
+- Add testing
