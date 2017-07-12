@@ -24,6 +24,28 @@ spec:
 apiVersion: apps/v1beta1 # for versions before 1.6.0 use extensions/v1beta1
 kind: Deployment
 metadata:
+  name: scale-to-deployment
+  labels:
+    scale: prometheus
+  annotations:
+    prometheusScaler/prometheus-query: "time() % 7"
+    prometheusScaler/min-scale: "2"
+    prometheusScaler/max-scale: "5"
+    prometheusScaler/scale-to: "result"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+---
+apiVersion: apps/v1beta1 # for versions before 1.6.0 use extensions/v1beta1
+kind: Deployment
+metadata:
   name: ignore-deployment
 spec:
   replicas: 1
