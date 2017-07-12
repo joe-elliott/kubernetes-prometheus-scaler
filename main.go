@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -13,23 +14,14 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 
-	"os"
-
-	"github.com/Knetic/govaluate"
 	"github.com/op/go-logging"
 	"github.com/prometheus/client_golang/api/prometheus"
 	"github.com/prometheus/common/model"
+
+	"kubernetes-prometheus-scaler/scaler"
 )
 
-const AppName = "prometheus-autoscaler"
-
 const DeploymentLabelSelector = "scale==prometheus"
-
-const DeploymentAnnotationPrometheusQuery = "prometheusScaler/prometheus-query"
-const DeploymentAnnotationMinScale = "prometheusScaler/min-scale"
-const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
-const DeploymentAnnotationScaleUpWhen = "prometheusScaler/scale-up-when"
-const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
@@ -69,6 +61,7 @@ func main() {
 	}
 
 	for {
+
 		deployments, err := clientset.Extensions().Deployments("").List(v1.ListOptions{
 			LabelSelector: DeploymentLabelSelector,
 		})
@@ -83,29 +76,12 @@ func main() {
 
 			log.Infof("Considering: %v", deployment.Name)
 
-			// parse scaling parameters from deployment spec
-			query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
-			scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
-			scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
-			minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
+			scalingFunc, query, err := scaler.MakeScalingFunc(deployment)
 
 			if err != nil {
-				log.Errorf("  minScale: %v", err)
+				log.Errorf("scalingFunc: %v", err)
 				continue
 			}
-
-			maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
-
-			if err != nil {
-				log.Errorf("  maxScale: %v", err)
-				continue
-			}
-
-			// get current state
-			replicaCount := int64(*deployment.Spec.Replicas)
-
-			log.Infof("  current replica count: %v", replicaCount)
-			log.Infof("  query: %v", query)
 
 			// get and evaluate promQuery
 			result, err := promQuery(query)
@@ -115,54 +91,18 @@ func main() {
 				continue
 			}
 
-			log.Infof("  result: %f", result)
-			log.Infof("  scaleUpWhen: %v", scaleUpWhen)
-			log.Infof("  scaleDownWhen: %v", scaleDownWhen)
+			log.Infof("result: %f", result)
 
-			parameters := make(map[string]interface{}, 1)
-			parameters["result"] = result
-			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(scaleUpWhen)
+			newScale, err := scalingFunc(result)
 
 			if err != nil {
-				log.Errorf("  exprScaleUpWhen: %v", err)
+				log.Errorf("scalingFunc: %v", err)
 				continue
-			}
-
-			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(scaleDownWhen)
-
-			if err != nil {
-				log.Errorf("  exprScaleDownWhen: %v", err)
-				continue
-			}
-
-			scaleUp, err := exprScaleUpWhen.Evaluate(parameters)
-
-			if err != nil {
-				log.Errorf("  exprScaleUpWhen: %v", err)
-				continue
-			}
-
-			scaleDown, err := exprScaleDownWhen.Evaluate(parameters)
-
-			if err != nil {
-				log.Errorf("  exprScaleDownWhen: %v", err)
-				continue
-			}
-
-			// scale up or down
-			log.Infof("  scaleUp: %v", scaleUp)
-			log.Infof("  scaleDown: %v", scaleDown)
-
-			if scaleUp == true && replicaCount < maxScale {
-				replicaCount++
-			}
-			if scaleDown == true && replicaCount > minScale {
-				replicaCount--
 			}
 
 			// set the replica set
-			log.Infof("  Setting replica count to %d\n", replicaCount)
-			jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(replicaCount, 10) + " }]"
+			log.Infof("  Setting replica count to %d\n", newScale)
+			jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
 			log.Infof("  Patch string: %v\n", jsonPatch)
 			_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
 
