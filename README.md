@@ -13,7 +13,7 @@ Add this label to deployments you want considered:
     scale: prometheus
 ```
 
-There are two different scaling strategies currently available.
+There are two different scaling strategies currently available.  See below for the annotations necessary to control scaling.
 
 #### Step Scaling
 
