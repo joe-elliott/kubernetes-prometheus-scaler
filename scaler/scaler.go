@@ -18,74 +18,101 @@ const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
-func MakeScalingFunc(deployment v1beta1.Deployment) (func(result float64) (int64, error), string, error) {
+type Scalable interface {
+	GetQuery() string
+}
+
+type BaseScalable struct {
+	query    string
+	minScale int64
+	maxScale int64
+	curScale int64
+}
+
+func (s BaseScalable) GetQuery() string {
+	return s.query
+}
+
+type StepScalable struct {
+	BaseScalable
+	scaleUpWhen   string
+	scaleDownWhen string
+}
+
+func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
+	scalable := StepScalable{}
+	var err error
 
 	// parse scaling parameters from deployment spec
-	query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
-	minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
+	scalable.query = deployment.Annotations[DeploymentAnnotationPrometheusQuery]
+	scalable.minScale, err = strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
 
 	if err != nil {
-		return nil, "", fmt.Errorf("minScale: %v", err)
+		return nil, fmt.Errorf("minScale: %v", err)
 	}
 
-	maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
+	scalable.maxScale, err = strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
 
 	if err != nil {
-		return nil, "", fmt.Errorf("maxScale: %v", err)
+		return nil, fmt.Errorf("maxScale: %v", err)
 	}
 
 	// get current state
-	curScale := int64(*deployment.Spec.Replicas)
+	scalable.curScale = int64(*deployment.Spec.Replicas)
 
-	log.Infof("current scale: %v", curScale)
-	log.Infof("query: %v", query)
+	scalable.scaleUpWhen = deployment.Annotations[DeploymentAnnotationScaleUpWhen]
+	scalable.scaleDownWhen = deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 
-	scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
-	scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
+	return scalable, nil
+}
 
-	log.Infof("scaleUpWhen: %v", scaleUpWhen)
-	log.Infof("scaleDownWhen: %v", scaleDownWhen)
+func MakeScalingFunc(scalable Scalable) (func(result float64) (int64, error), error) {
 
-	return func(result float64) (int64, error) {
+	if step, ok := scalable.(StepScalable); ok {
 
-		parameters := make(map[string]interface{}, 1)
-		parameters["result"] = result
-		exprScaleUpWhen, err := govaluate.NewEvaluableExpression(scaleUpWhen)
+		return func(result float64) (int64, error) {
 
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleUpWhen: %v", err)
-		}
+			parameters := make(map[string]interface{}, 1)
+			parameters["result"] = result
+			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(step.scaleUpWhen)
 
-		exprScaleDownWhen, err := govaluate.NewEvaluableExpression(scaleDownWhen)
+			if err != nil {
+				return 0, fmt.Errorf("exprScaleUpWhen: %v", err)
+			}
 
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleDownWhen: %v", err)
-		}
+			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(step.scaleDownWhen)
 
-		scaleUp, err := exprScaleUpWhen.Evaluate(parameters)
+			if err != nil {
+				return 0, fmt.Errorf("exprScaleDownWhen: %v", err)
+			}
 
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
-		}
+			scaleUp, err := exprScaleUpWhen.Evaluate(parameters)
 
-		scaleDown, err := exprScaleDownWhen.Evaluate(parameters)
+			if err != nil {
+				return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
+			}
 
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleDownWhen.Evalute: %v", err)
-		}
+			scaleDown, err := exprScaleDownWhen.Evaluate(parameters)
 
-		// scale up or down
-		log.Infof("scaleUp: %v", scaleUp)
-		log.Infof("scaleDown: %v", scaleDown)
+			if err != nil {
+				return 0, fmt.Errorf("exprScaleDownWhen.Evalute: %v", err)
+			}
 
-		newScale := curScale
-		if scaleUp == true && newScale < maxScale {
-			newScale++
-		}
-		if scaleDown == true && newScale > minScale {
-			newScale--
-		}
+			// scale up or down
+			log.Infof("scaleUp: %v", scaleUp)
+			log.Infof("scaleDown: %v", scaleDown)
 
-		return newScale, nil
-	}, query, nil
+			newScale := step.curScale
+			if scaleUp == true && newScale < step.maxScale {
+				newScale++
+			}
+			if scaleDown == true && newScale > step.minScale {
+				newScale--
+			}
+
+			return newScale, nil
+		}, nil
+	}
+
+	return nil, fmt.Errorf("Scalable is an unknown type: %v", scalable)
 }

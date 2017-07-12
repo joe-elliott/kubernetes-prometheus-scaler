@@ -76,7 +76,16 @@ func main() {
 
 			log.Infof("Considering: %v", deployment.Name)
 
-			scalingFunc, query, err := scaler.MakeScalingFunc(deployment)
+			scalable, err := scaler.NewScalable(deployment)
+
+			if err != nil {
+				log.Errorf("NewScalable: %v", err)
+				continue
+			}
+
+			log.Infof("Scalable: %v", scalable)
+
+			scalingFunc, err := scaler.MakeScalingFunc(scalable)
 
 			if err != nil {
 				log.Errorf("scalingFunc: %v", err)
@@ -84,7 +93,7 @@ func main() {
 			}
 
 			// get and evaluate promQuery
-			result, err := promQuery(query)
+			result, err := promQuery(scalable.GetQuery())
 
 			if err != nil {
 				log.Errorf("promQuery: %v", err)
