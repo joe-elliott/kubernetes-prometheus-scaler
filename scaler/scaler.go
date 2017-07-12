@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Knetic/govaluate"
 	logging "github.com/op/go-logging"
 
+	"github.com/Knetic/govaluate"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
@@ -35,8 +35,8 @@ func (s BaseScalable) GetQuery() string {
 
 type StepScalable struct {
 	BaseScalable
-	scaleUpWhen   string
-	scaleDownWhen string
+	scaleUpWhen   *govaluate.EvaluableExpression
+	scaleDownWhen *govaluate.EvaluableExpression
 }
 
 func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
@@ -60,8 +60,23 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	// get current state
 	scalable.curScale = int64(*deployment.Spec.Replicas)
 
-	scalable.scaleUpWhen = deployment.Annotations[DeploymentAnnotationScaleUpWhen]
-	scalable.scaleDownWhen = deployment.Annotations[DeploymentAnnotationScaleDownWhen]
+	scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
+	scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
+
+	log.Infof("scaleUpWhen: %v", scaleUpWhen)
+	log.Infof("scaleDownWhen: %v", scaleDownWhen)
+
+	scalable.scaleUpWhen, err = govaluate.NewEvaluableExpression(scaleUpWhen)
+
+	if err != nil {
+		return nil, fmt.Errorf("exprScaleUpWhen: %v", err)
+	}
+
+	scalable.scaleDownWhen, err = govaluate.NewEvaluableExpression(scaleDownWhen)
+
+	if err != nil {
+		return nil, fmt.Errorf("exprScaleDownWhen: %v", err)
+	}
 
 	return scalable, nil
 }
@@ -74,25 +89,14 @@ func MakeScalingFunc(scalable Scalable) (func(result float64) (int64, error), er
 
 			parameters := make(map[string]interface{}, 1)
 			parameters["result"] = result
-			exprScaleUpWhen, err := govaluate.NewEvaluableExpression(step.scaleUpWhen)
 
-			if err != nil {
-				return 0, fmt.Errorf("exprScaleUpWhen: %v", err)
-			}
-
-			exprScaleDownWhen, err := govaluate.NewEvaluableExpression(step.scaleDownWhen)
-
-			if err != nil {
-				return 0, fmt.Errorf("exprScaleDownWhen: %v", err)
-			}
-
-			scaleUp, err := exprScaleUpWhen.Evaluate(parameters)
+			scaleUp, err := step.scaleUpWhen.Evaluate(parameters)
 
 			if err != nil {
 				return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
 			}
 
-			scaleDown, err := exprScaleDownWhen.Evaluate(parameters)
+			scaleDown, err := step.scaleDownWhen.Evaluate(parameters)
 
 			if err != nil {
 				return 0, fmt.Errorf("exprScaleDownWhen.Evalute: %v", err)

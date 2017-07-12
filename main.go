@@ -83,7 +83,7 @@ func main() {
 				continue
 			}
 
-			log.Infof("Scalable: %#v", scalable)
+			log.Infof("Scalable: %+v", scalable)
 
 			scalingFunc, err := scaler.MakeScalingFunc(scalable)
 
