@@ -23,6 +23,11 @@ var log = logging.MustGetLogger("prometheus-autoscaler")
 
 type Scalable interface {
 	GetQuery() string
+
+	setQuery(string)
+	setCurScale(int64)
+	setMinScale(int64)
+	setMaxScale(int64)
 }
 
 type BaseScalable struct {
@@ -32,8 +37,24 @@ type BaseScalable struct {
 	curScale int64
 }
 
-func (s BaseScalable) GetQuery() string {
+func (s *BaseScalable) GetQuery() string {
 	return s.query
+}
+
+func (s *BaseScalable) setQuery(q string) {
+	s.query = q
+}
+
+func (s *BaseScalable) setMinScale(n int64) {
+	s.minScale = n
+}
+
+func (s *BaseScalable) setMaxScale(n int64) {
+	s.maxScale = n
+}
+
+func (s *BaseScalable) setCurScale(n int64) {
+	s.curScale = n
 }
 
 type StepScalable struct {
@@ -49,24 +70,9 @@ type DirectScalable struct {
 
 func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	var err error
+	var ret Scalable
 
-	// parse scaling parameters from deployment spec
-	query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
-	minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
-
-	if err != nil {
-		return nil, fmt.Errorf("minScale: %v", err)
-	}
-
-	maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
-
-	if err != nil {
-		return nil, fmt.Errorf("maxScale: %v", err)
-	}
-
-	// get current state
-	curScale := int64(*deployment.Spec.Replicas)
-
+	// first parse annotations to determine scalable type
 	scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
 	scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 	scaleTo := deployment.Annotations[DeploymentAnnotationScaleTo]
@@ -90,14 +96,7 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 			return nil, fmt.Errorf("exprScaleDownWhen: %v", err)
 		}
 
-		// oh lordy there has to be a better way
-		//  where is easy mode polymorphism?
-		scalable.query = query
-		scalable.curScale = curScale
-		scalable.maxScale = maxScale
-		scalable.minScale = minScale
-
-		return scalable, nil
+		ret = &scalable
 	} else if scaleTo != "" {
 		scalable := DirectScalable{}
 
@@ -107,23 +106,42 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 			return nil, fmt.Errorf("exprScaleTo: %v", err)
 		}
 
-		// oh lordy there has to be a better way
-		//  where is easy mode polymorphism?
-		scalable.query = query
-		scalable.curScale = curScale
-		scalable.maxScale = maxScale
-		scalable.minScale = minScale
-
-		return scalable, nil
+		ret = &scalable
 	}
 
-	return nil, errors.New("Deployment needs either scaleUp/scaleDown annotations or a scaleTo annotation")
+	// parse standard fields if we successfully created a scalable
+	if ret != nil {
+
+		query := deployment.Annotations[DeploymentAnnotationPrometheusQuery]
+		minScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMinScale], 10, 32)
+
+		if err != nil {
+			return nil, fmt.Errorf("minScale: %v", err)
+		}
+
+		maxScale, err := strconv.ParseInt(deployment.Annotations[DeploymentAnnotationMaxScale], 10, 32)
+
+		if err != nil {
+			return nil, fmt.Errorf("maxScale: %v", err)
+		}
+
+		curScale := int64(*deployment.Spec.Replicas)
+
+		ret.setQuery(query)
+		ret.setCurScale(curScale)
+		ret.setMinScale(minScale)
+		ret.setMaxScale(maxScale)
+
+		return ret, nil
+	}
+
+	return nil, errors.New("Deployment needs either scaleUp and scaleDown annotations or a scaleTo annotation")
 }
 
 func MakeScalingFunc(scalable Scalable) (func(result float64) (int64, error), error) {
 
 	switch s := scalable.(type) {
-	case StepScalable:
+	case *StepScalable:
 		return func(result float64) (int64, error) {
 
 			parameters := make(map[string]interface{}, 1)
@@ -155,7 +173,7 @@ func MakeScalingFunc(scalable Scalable) (func(result float64) (int64, error), er
 
 			return newScale, nil
 		}, nil
-	case DirectScalable:
+	case *DirectScalable:
 		return func(result float64) (int64, error) {
 
 			parameters := make(map[string]interface{}, 1)
