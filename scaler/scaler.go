@@ -23,6 +23,7 @@ var log = logging.MustGetLogger("prometheus-autoscaler")
 
 type Scalable interface {
 	GetQuery() string
+	GetCurScale() int64
 
 	setQuery(string)
 	setCurScale(int64)
@@ -39,6 +40,10 @@ type BaseScalable struct {
 
 func (s *BaseScalable) GetQuery() string {
 	return s.query
+}
+
+func (s *BaseScalable) GetCurScale() int64 {
+	return s.curScale
 }
 
 func (s *BaseScalable) setQuery(q string) {

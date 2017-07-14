@@ -110,14 +110,18 @@ func main() {
 			}
 
 			// set the replica set
-			log.Infof("  Setting replica count to %d\n", newScale)
-			jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
-			log.Infof("  Patch string: %v\n", jsonPatch)
-			_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
+			if scalable.GetCurScale() != newScale {
+				log.Infof("Setting replica count to %d\n", newScale)
+				jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
+				log.Infof("Patch string: %v\n", jsonPatch)
+				_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
 
-			if err != nil {
-				log.Errorf("  Error scaling: %v", err)
-				continue
+				if err != nil {
+					log.Errorf("  Error scaling: %v", err)
+					continue
+				}
+			} else {
+				log.Infof("curScale == newScale.  Not scaling %v", deployment.Name)
 			}
 		}
 
