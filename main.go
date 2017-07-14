@@ -26,7 +26,7 @@ const DeploymentLabelSelector = "scale==prometheus"
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
 var format = logging.MustStringFormatter(
-	`%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{message}`,
+	`%{time:15:04:05.000} %{level:.4s} %{message}`,
 )
 
 var prometheusURL = flag.String("prometheus-url", "http://prometheus:9090", "URL to query.")
