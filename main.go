@@ -78,7 +78,7 @@ func main() {
 				continue
 			}
 
-			log.Infof("Scalable: %+v", scalable)
+			log.Debugf("Scalable: %+v", scalable)
 
 			// get and evaluate promQuery
 			result, err := prometheusQuery(scalable.GetQuery())
@@ -101,7 +101,7 @@ func main() {
 			if scalable.GetCurScale() != newScale {
 				log.Infof("Setting replica count to %d\n", newScale)
 				jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
-				log.Infof("Patch string: %v\n", jsonPatch)
+				log.Debugf("Patch string: %v\n", jsonPatch)
 				_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
 
 				if err != nil {

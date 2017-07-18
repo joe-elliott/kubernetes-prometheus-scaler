@@ -82,9 +82,9 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 	scaleTo := deployment.Annotations[DeploymentAnnotationScaleTo]
 
-	log.Infof("scaleUpWhen: %v", scaleUpWhen)
-	log.Infof("scaleDownWhen: %v", scaleDownWhen)
-	log.Infof("scaleTo: %v", scaleTo)
+	log.Debugf("scaleUpWhen: %v", scaleUpWhen)
+	log.Debugf("scaleDownWhen: %v", scaleDownWhen)
+	log.Debugf("scaleTo: %v", scaleTo)
 
 	if scaleUpWhen != "" && scaleDownWhen != "" {
 		scalable := StepScalable{}
@@ -163,8 +163,8 @@ func CalculateNewScale(scalable Scalable, result float64) (int64, error) {
 		}
 
 		// scale up or down
-		log.Infof("scaleUp: %v", scaleUp)
-		log.Infof("scaleDown: %v", scaleDown)
+		log.Debugf("scaleUp: %v", scaleUp)
+		log.Debugf("scaleDown: %v", scaleDown)
 
 		newScale := s.curScale
 		if scaleUp == true && newScale < s.maxScale {
@@ -183,7 +183,7 @@ func CalculateNewScale(scalable Scalable, result float64) (int64, error) {
 		}
 
 		// scale up or down
-		log.Infof("scaleTo: %v", scaleTo)
+		log.Debugf("scaleTo: %v", scaleTo)
 
 		var newScale int64
 
