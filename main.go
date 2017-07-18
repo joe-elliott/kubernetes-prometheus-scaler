@@ -1,10 +1,7 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -15,8 +12,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/op/go-logging"
-	"github.com/prometheus/client_golang/api/prometheus"
-	"github.com/prometheus/common/model"
 
 	"kubernetes-prometheus-scaler/util"
 )
@@ -44,7 +39,7 @@ func main() {
 	log.Infof("prometheus-url=%v", *prometheusURL)
 	log.Infof("assessment-interval=%v", *assessmentInterval)
 
-	promQuery, err := makeQueryFunc(*prometheusURL)
+	prometheusQuery, err := util.MakePrometheusQueryFunc(*prometheusURL)
 	if err != nil {
 		log.Criticalf("makeQueryFunc failed: %v", err)
 	}
@@ -86,10 +81,10 @@ func main() {
 			log.Infof("Scalable: %+v", scalable)
 
 			// get and evaluate promQuery
-			result, err := promQuery(scalable.GetQuery())
+			result, err := prometheusQuery(scalable.GetQuery())
 
 			if err != nil {
-				log.Errorf("promQuery: %v", err)
+				log.Errorf("prometheusQuery: %v", err)
 				continue
 			}
 
@@ -120,52 +115,4 @@ func main() {
 
 		time.Sleep(*assessmentInterval)
 	}
-}
-
-func makeQueryFunc(url string) (func(query string) (float64, error), error) {
-
-	client, err := prometheus.New(prometheus.Config{
-		Address: url,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if client == nil {
-		return nil, errors.New("client is nil")
-	}
-
-	api := prometheus.NewQueryAPI(client)
-
-	if api == nil {
-		return nil, errors.New("api is nil")
-	}
-
-	return func(query string) (float64, error) {
-
-		val, err := api.Query(context.Background(), query, time.Now())
-
-		if err != nil {
-			return 0, err
-		}
-
-		if val == nil {
-			return 0, errors.New("val is nil")
-		}
-
-		original, ok := val.(*model.Scalar)
-
-		if !ok {
-			return 0, fmt.Errorf("not a scalar %v", val)
-		}
-
-		res, err := strconv.ParseFloat(original.Value.String(), 64)
-
-		if err != nil {
-			return 0, err
-		}
-
-		return res, nil
-	}, nil
 }
