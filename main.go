@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/client_golang/api/prometheus"
 	"github.com/prometheus/common/model"
 
-	"kubernetes-prometheus-scaler/scaler"
+	"kubernetes-prometheus-scaler/util"
 )
 
 const DeploymentLabelSelector = "scale==prometheus"
@@ -76,7 +76,7 @@ func main() {
 
 			log.Infof("Considering: %v", deployment.Name)
 
-			scalable, err := scaler.NewScalable(deployment)
+			scalable, err := util.NewScalable(deployment)
 
 			if err != nil {
 				log.Errorf("NewScalable: %v", err)
@@ -95,7 +95,7 @@ func main() {
 
 			log.Infof("result: %f", result)
 
-			newScale, err := scaler.CalculateNewScale(scalable, result)
+			newScale, err := util.CalculateNewScale(scalable, result)
 
 			if err != nil {
 				log.Errorf("scalingFunc: %v", err)
