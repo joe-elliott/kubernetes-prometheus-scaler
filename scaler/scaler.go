@@ -143,76 +143,66 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	return nil, errors.New("Deployment needs either scaleUp and scaleDown annotations or a scaleTo annotation")
 }
 
-func MakeScalingFunc(scalable Scalable) (func(result float64) (int64, error), error) {
+func CalculateNewScale(scalable Scalable, result float64) (int64, error) {
+
+	parameters := make(map[string]interface{}, 1)
+	parameters["result"] = result
 
 	switch s := scalable.(type) {
 	case *StepScalable:
-		return func(result float64) (int64, error) {
+		scaleUp, err := s.scaleUpWhen.Evaluate(parameters)
 
-			parameters := make(map[string]interface{}, 1)
-			parameters["result"] = result
+		if err != nil {
+			return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
+		}
 
-			scaleUp, err := s.scaleUpWhen.Evaluate(parameters)
+		scaleDown, err := s.scaleDownWhen.Evaluate(parameters)
 
-			if err != nil {
-				return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
-			}
+		if err != nil {
+			return 0, fmt.Errorf("exprScaleDownWhen.Evaluate: %v", err)
+		}
 
-			scaleDown, err := s.scaleDownWhen.Evaluate(parameters)
+		// scale up or down
+		log.Infof("scaleUp: %v", scaleUp)
+		log.Infof("scaleDown: %v", scaleDown)
 
-			if err != nil {
-				return 0, fmt.Errorf("exprScaleDownWhen.Evaluate: %v", err)
-			}
+		newScale := s.curScale
+		if scaleUp == true && newScale < s.maxScale {
+			newScale++
+		}
+		if scaleDown == true && newScale > s.minScale {
+			newScale--
+		}
 
-			// scale up or down
-			log.Infof("scaleUp: %v", scaleUp)
-			log.Infof("scaleDown: %v", scaleDown)
-
-			newScale := s.curScale
-			if scaleUp == true && newScale < s.maxScale {
-				newScale++
-			}
-			if scaleDown == true && newScale > s.minScale {
-				newScale--
-			}
-
-			return newScale, nil
-		}, nil
+		return newScale, nil
 	case *DirectScalable:
-		return func(result float64) (int64, error) {
+		scaleTo, err := s.scaleTo.Evaluate(parameters)
 
-			parameters := make(map[string]interface{}, 1)
-			parameters["result"] = result
+		if err != nil {
+			return 0, fmt.Errorf("exprScaleTo.Evaluate: %v", err)
+		}
 
-			scaleTo, err := s.scaleTo.Evaluate(parameters)
+		// scale up or down
+		log.Infof("scaleTo: %v", scaleTo)
 
-			if err != nil {
-				return 0, fmt.Errorf("exprScaleTo.Evaluate: %v", err)
+		var newScale int64
+
+		if f, ok := scaleTo.(float64); ok {
+			// dangerous due to float representation. where's my round() function go?
+			newScale = int64(math.Floor(f + .5))
+
+			if newScale > s.maxScale {
+				newScale = s.maxScale
 			}
-
-			// scale up or down
-			log.Infof("scaleTo: %v", scaleTo)
-
-			var newScale int64
-
-			if f, ok := scaleTo.(float64); ok {
-				// dangerous due to float representation. where's my round() function go?
-				newScale = int64(math.Floor(f + .5))
-
-				if newScale > s.maxScale {
-					newScale = s.maxScale
-				}
-				if newScale < s.minScale {
-					newScale = s.minScale
-				}
-			} else {
-				return 0, fmt.Errorf("Can't cast %v to int64", scaleTo)
+			if newScale < s.minScale {
+				newScale = s.minScale
 			}
+		} else {
+			return 0, fmt.Errorf("Can't cast %v to int64", scaleTo)
+		}
 
-			return newScale, nil
-		}, nil
-	default:
-		return nil, fmt.Errorf("Scalable is an unknown type: %v", scalable)
+		return newScale, nil
 	}
 
+	return 0, fmt.Errorf("Scalable is an unknown type: %v", scalable)
 }

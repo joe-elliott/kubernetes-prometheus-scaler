@@ -85,13 +85,6 @@ func main() {
 
 			log.Infof("Scalable: %+v", scalable)
 
-			scalingFunc, err := scaler.MakeScalingFunc(scalable)
-
-			if err != nil {
-				log.Errorf("scalingFunc: %v", err)
-				continue
-			}
-
 			// get and evaluate promQuery
 			result, err := promQuery(scalable.GetQuery())
 
@@ -102,7 +95,7 @@ func main() {
 
 			log.Infof("result: %f", result)
 
-			newScale, err := scalingFunc(result)
+			newScale, err := scaler.CalculateNewScale(scalable, result)
 
 			if err != nil {
 				log.Errorf("scalingFunc: %v", err)
