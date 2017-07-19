@@ -150,59 +150,67 @@ func CalculateNewScale(scalable Scalable, result float64) (int64, error) {
 
 	switch s := scalable.(type) {
 	case *StepScalable:
-		scaleUp, err := s.scaleUpWhen.Evaluate(parameters)
-
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
-		}
-
-		scaleDown, err := s.scaleDownWhen.Evaluate(parameters)
-
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleDownWhen.Evaluate: %v", err)
-		}
-
-		// scale up or down
-		log.Debugf("scaleUp: %v", scaleUp)
-		log.Debugf("scaleDown: %v", scaleDown)
-
-		newScale := s.curScale
-		if scaleUp == true && newScale < s.maxScale {
-			newScale++
-		}
-		if scaleDown == true && newScale > s.minScale {
-			newScale--
-		}
-
-		return newScale, nil
+		return calculateStepScale(s, result, parameters)
 	case *DirectScalable:
-		scaleTo, err := s.scaleTo.Evaluate(parameters)
-
-		if err != nil {
-			return 0, fmt.Errorf("exprScaleTo.Evaluate: %v", err)
-		}
-
-		// scale up or down
-		log.Debugf("scaleTo: %v", scaleTo)
-
-		var newScale int64
-
-		if f, ok := scaleTo.(float64); ok {
-			// dangerous due to float representation. where's my round() function go?
-			newScale = int64(math.Floor(f + .5))
-
-			if newScale > s.maxScale {
-				newScale = s.maxScale
-			}
-			if newScale < s.minScale {
-				newScale = s.minScale
-			}
-		} else {
-			return 0, fmt.Errorf("Can't cast %v to int64", scaleTo)
-		}
-
-		return newScale, nil
+		return calculateDirectScale(s, result, parameters)
 	}
 
 	return 0, fmt.Errorf("Scalable is an unknown type: %v", scalable)
+}
+
+func calculateStepScale(s *StepScalable, result float64, parameters map[string]interface{}) (int64, error) {
+	scaleUp, err := s.scaleUpWhen.Evaluate(parameters)
+
+	if err != nil {
+		return 0, fmt.Errorf("exprScaleUpWhen.Evaluate: %v", err)
+	}
+
+	scaleDown, err := s.scaleDownWhen.Evaluate(parameters)
+
+	if err != nil {
+		return 0, fmt.Errorf("exprScaleDownWhen.Evaluate: %v", err)
+	}
+
+	// scale up or down
+	log.Debugf("scaleUp: %v", scaleUp)
+	log.Debugf("scaleDown: %v", scaleDown)
+
+	newScale := s.curScale
+	if scaleUp == true && newScale < s.maxScale {
+		newScale++
+	}
+	if scaleDown == true && newScale > s.minScale {
+		newScale--
+	}
+
+	return newScale, nil
+}
+
+func calculateDirectScale(s *DirectScalable, result float64, parameters map[string]interface{}) (int64, error) {
+	scaleTo, err := s.scaleTo.Evaluate(parameters)
+
+	if err != nil {
+		return 0, fmt.Errorf("exprScaleTo.Evaluate: %v", err)
+	}
+
+	// scale up or down
+	log.Debugf("scaleTo: %v", scaleTo)
+
+	var newScale int64
+
+	if f, ok := scaleTo.(float64); ok {
+		// dangerous due to float representation. where's my round() function go?
+		newScale = int64(math.Floor(f + .5))
+
+		if newScale > s.maxScale {
+			newScale = s.maxScale
+		}
+		if newScale < s.minScale {
+			newScale = s.minScale
+		}
+	} else {
+		return 0, fmt.Errorf("Can't cast %v to int64", scaleTo)
+	}
+
+	return newScale, nil
 }
