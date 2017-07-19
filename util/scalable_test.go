@@ -15,7 +15,10 @@ type testCase struct {
 var _trueExpr, _ = govaluate.NewEvaluableExpression("true")
 var _falseExpr, _ = govaluate.NewEvaluableExpression("false")
 
+var _fiveExpr, _ = govaluate.NewEvaluableExpression("5")
+
 var _testCases = []testCase{
+	// step scalable
 	{
 		description:   "Will Scale Up",
 		expectedScale: 4,
@@ -92,6 +95,40 @@ var _testCases = []testCase{
 			},
 			scaleUpWhen:   _falseExpr,
 			scaleDownWhen: _trueExpr,
+		},
+	},
+	// direct scalable
+	{
+		description:   "Scales directly",
+		expectedScale: 5,
+		scalable: &DirectScalable{
+			BaseScalable: BaseScalable{
+				minScale: 4,
+				maxScale: 6,
+			},
+			scaleTo: _fiveExpr,
+		},
+	},
+	{
+		description:   "Scaling directly won't go below min",
+		expectedScale: 6,
+		scalable: &DirectScalable{
+			BaseScalable: BaseScalable{
+				minScale: 6,
+				maxScale: 9,
+			},
+			scaleTo: _fiveExpr,
+		},
+	},
+	{
+		description:   "Scaling directly won't go over max",
+		expectedScale: 4,
+		scalable: &DirectScalable{
+			BaseScalable: BaseScalable{
+				minScale: 2,
+				maxScale: 4,
+			},
+			scaleTo: _fiveExpr,
 		},
 	},
 }
