@@ -44,21 +44,57 @@ var _testCases = []testCase{
 			scaleDownWhen: _trueExpr,
 		},
 	},
+	{
+		description:   "Stays the same (false)",
+		expectedScale: 3,
+		scalable: &StepScalable{
+			BaseScalable: BaseScalable{
+				query:    "query",
+				minScale: 2,
+				maxScale: 4,
+				curScale: 3,
+			},
+			scaleUpWhen:   _falseExpr,
+			scaleDownWhen: _falseExpr,
+		},
+	},
+	{
+		description:   "Stays the same (true)",
+		expectedScale: 3,
+		scalable: &StepScalable{
+			BaseScalable: BaseScalable{
+				query:    "query",
+				minScale: 2,
+				maxScale: 4,
+				curScale: 3,
+			},
+			scaleUpWhen:   _trueExpr,
+			scaleDownWhen: _trueExpr,
+		},
+	},
 }
 
 func TestStepScalable(t *testing.T) {
 
-	for _, testCase := range _testCases {
+	for _, tc := range _testCases {
 
-		newScale, err := CalculateNewScale(testCase.scalable, 0.0)
+		func(tc testCase) {
 
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
+			t.Run(tc.description, func(t *testing.T) {
 
-		if newScale != testCase.expectedScale {
-			t.Errorf("Test [%v] failed.", testCase.description)
-		}
+				newScale, err := CalculateNewScale(tc.scalable, 0.0)
+
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				if newScale != tc.expectedScale {
+					t.Errorf("Test [%v] failed.", tc.description)
+				}
+
+			})
+
+		}(tc)
 	}
 
 }
