@@ -21,7 +21,6 @@ var _testCases = []testCase{
 		expectedScale: 4,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 3,
@@ -35,7 +34,6 @@ var _testCases = []testCase{
 		expectedScale: 2,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 3,
@@ -49,7 +47,6 @@ var _testCases = []testCase{
 		expectedScale: 3,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 3,
@@ -63,7 +60,6 @@ var _testCases = []testCase{
 		expectedScale: 3,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 3,
@@ -77,7 +73,6 @@ var _testCases = []testCase{
 		expectedScale: 4,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 4,
@@ -91,7 +86,6 @@ var _testCases = []testCase{
 		expectedScale: 2,
 		scalable: &StepScalable{
 			BaseScalable: BaseScalable{
-				query:    "query",
 				minScale: 2,
 				maxScale: 4,
 				curScale: 2,
