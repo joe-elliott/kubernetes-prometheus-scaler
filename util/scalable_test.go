@@ -72,6 +72,34 @@ var _testCases = []testCase{
 			scaleDownWhen: _trueExpr,
 		},
 	},
+	{
+		description:   "Won't scale past max",
+		expectedScale: 4,
+		scalable: &StepScalable{
+			BaseScalable: BaseScalable{
+				query:    "query",
+				minScale: 2,
+				maxScale: 4,
+				curScale: 4,
+			},
+			scaleUpWhen:   _trueExpr,
+			scaleDownWhen: _falseExpr,
+		},
+	},
+	{
+		description:   "Won't scale below min",
+		expectedScale: 2,
+		scalable: &StepScalable{
+			BaseScalable: BaseScalable{
+				query:    "query",
+				minScale: 2,
+				maxScale: 4,
+				curScale: 2,
+			},
+			scaleUpWhen:   _falseExpr,
+			scaleDownWhen: _trueExpr,
+		},
+	},
 }
 
 func TestStepScalable(t *testing.T) {
@@ -81,7 +109,6 @@ func TestStepScalable(t *testing.T) {
 		func(tc testCase) {
 
 			t.Run(tc.description, func(t *testing.T) {
-
 				newScale, err := CalculateNewScale(tc.scalable, 0.0)
 
 				if err != nil {
