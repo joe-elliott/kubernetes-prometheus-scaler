@@ -133,7 +133,7 @@ var _testCases = []testCase{
 	},
 }
 
-func TestStepScalable(t *testing.T) {
+func TestScalable(t *testing.T) {
 
 	for _, tc := range _testCases {
 
