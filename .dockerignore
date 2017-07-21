@@ -1,0 +1,5 @@
+**/*
+
+!util
+!vendor
+!main.go
