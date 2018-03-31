@@ -1,11 +1,15 @@
 hash: a78a7c32392c7df65e3422010c0894d746bd5a51053fb78058f0c3ee55e6a905
-updated: 2017-07-06T17:09:45.842194598-04:00
+updated: 2018-03-31T08:18:14.582093-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/beorn7/perks
+  version: 3a771d992973f24aa725d07868b467d1ddfceafb
+  subpackages:
+  - quantile
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/coreos/go-oidc
@@ -71,6 +75,10 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/pborman/uuid
@@ -79,10 +87,23 @@ imports:
   version: c5b7fccd204277076155f10851dad72b76a49317
   subpackages:
   - api/prometheus
+  - prometheus
+- name: github.com/prometheus/client_model
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
+  subpackages:
+  - go
 - name: github.com/prometheus/common
   version: 0866df4b85a18d652b6965be022d007cdf076822
   subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
   - model
+- name: github.com/prometheus/procfs
+  version: 780932d4fbbe0e69b84c34c20f5c8d0981e109ea
+  subpackages:
+  - internal/util
+  - nfs
+  - xfs
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
