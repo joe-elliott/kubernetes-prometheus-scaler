@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"kubernetes-prometheus-scaler/util"
 )
@@ -41,14 +44,18 @@ var (
 	)
 )
 
-func main() {
-
-	flag.Parse()
+func init() {
+	prometheus.MustRegister(_errorTotal)
 
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
 	backendFormatted := logging.NewBackendFormatter(backend, _logFormat)
 
 	logging.SetBackend(backendFormatted)
+}
+
+func main() {
+
+	flag.Parse()
 
 	_log.Infof("prometheus-url=%v", *_prometheusURL)
 	_log.Infof("assessment-interval=%v", *_assessmentInterval)
@@ -72,64 +79,75 @@ func main() {
 		os.Exit(1)
 	}
 
-	for {
+	go func() {
+		for {
 
-		deployments, err := clientset.Extensions().Deployments("").List(v1.ListOptions{
-			LabelSelector: deploymentLabelSelector,
-		})
-		if err != nil {
-			_log.Errorf("list deployments: %v", err)
-			continue
-		}
-
-		_log.Infof("Considering %d deployments for scaling.", len(deployments.Items))
-
-		for _, deployment := range deployments.Items {
-
-			_log.Infof("Considering: %v", deployment.Name)
-
-			scalable, err := util.NewScalable(deployment)
-
+			deployments, err := clientset.Extensions().Deployments("").List(v1.ListOptions{
+				LabelSelector: deploymentLabelSelector,
+			})
 			if err != nil {
-				_log.Errorf("NewScalable: %v", err)
+				_errorTotal.Inc()
+				_log.Errorf("list deployments: %v", err)
 				continue
 			}
 
-			_log.Debugf("Scalable: %+v", scalable)
+			_log.Infof("Considering %d deployments for scaling.", len(deployments.Items))
 
-			// get and evaluate promQuery
-			result, err := prometheusQuery(scalable.GetQuery())
+			for _, deployment := range deployments.Items {
 
-			if err != nil {
-				_log.Errorf("prometheusQuery: %v", err)
-				continue
-			}
+				_log.Infof("Considering: %v", deployment.Name)
 
-			_log.Infof("result: %f", result)
-
-			newScale, err := util.CalculateNewScale(scalable, result)
-
-			if err != nil {
-				_log.Errorf("scalingFunc: %v", err)
-				continue
-			}
-
-			// set the replica set
-			if scalable.GetCurScale() != newScale {
-				_log.Infof("Setting replica count to %d\n", newScale)
-				jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
-				_log.Debugf("Patch string: %v\n", jsonPatch)
-				_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
+				scalable, err := util.NewScalable(deployment)
 
 				if err != nil {
-					_log.Errorf("  Error scaling: %v", err)
+					_errorTotal.Inc()
+					_log.Errorf("NewScalable: %v", err)
 					continue
 				}
-			} else {
-				_log.Infof("curScale == newScale.  Not scaling %v", deployment.Name)
-			}
-		}
 
-		time.Sleep(*_assessmentInterval)
-	}
+				_log.Debugf("Scalable: %+v", scalable)
+
+				// get and evaluate promQuery
+				result, err := prometheusQuery(scalable.GetQuery())
+
+				if err != nil {
+					_errorTotal.Inc()
+					_log.Errorf("prometheusQuery: %v", err)
+					continue
+				}
+
+				_log.Infof("result: %f", result)
+
+				newScale, err := util.CalculateNewScale(scalable, result)
+
+				if err != nil {
+					_errorTotal.Inc()
+					_log.Errorf("scalingFunc: %v", err)
+					continue
+				}
+
+				// set the replica set
+				if scalable.GetCurScale() != newScale {
+					_log.Infof("Setting replica count to %d\n", newScale)
+					jsonPatch := "[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": " + strconv.FormatInt(newScale, 10) + " }]"
+					_log.Debugf("Patch string: %v\n", jsonPatch)
+					_, err = clientset.Extensions().Deployments(deployment.Namespace).Patch(deployment.Name, api.JSONPatchType, []byte(jsonPatch))
+
+					if err != nil {
+						_errorTotal.Inc()
+						_log.Errorf("  Error scaling: %v", err)
+						continue
+					}
+				} else {
+					_log.Infof("curScale == newScale.  Not scaling %v", deployment.Name)
+				}
+			}
+
+			time.Sleep(*_assessmentInterval)
+		}
+	}()
+
+	// Expose the registered metrics via HTTP.
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
