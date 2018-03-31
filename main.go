@@ -16,7 +16,7 @@ import (
 	"kubernetes-prometheus-scaler/util"
 )
 
-const DeploymentLabelSelector = "scale==prometheus"
+const deploymentLabelSelector = "scale==prometheus"
 
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
@@ -58,7 +58,7 @@ func main() {
 	for {
 
 		deployments, err := clientset.Extensions().Deployments("").List(v1.ListOptions{
-			LabelSelector: DeploymentLabelSelector,
+			LabelSelector: deploymentLabelSelector,
 		})
 		if err != nil {
 			log.Errorf("list deployments: %v", err)
