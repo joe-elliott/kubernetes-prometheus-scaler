@@ -49,6 +49,10 @@ Scale up, scale down and scale to conditions use this clever repo https://github
         URL to query. (default "http://prometheus:9090")
 ```
 
+#### Prometheus Metrics
+
+Publishes `prometheusscaler_error_total` on port 8080 at `/metrics`.  You can use this to alert on exceptions thrown while executing queries or attempting to scale.
+
 ### Improvements
 
 This repo is still under active development and needs a long list of improvements (but it works!).  Some obvious ones:
