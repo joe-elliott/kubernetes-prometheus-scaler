@@ -18,6 +18,7 @@ const DeploymentAnnotationMaxScale = "prometheusScaler/max-scale"
 const DeploymentAnnotationScaleUpWhen = "prometheusScaler/scale-up-when"
 const DeploymentAnnotationScaleDownWhen = "prometheusScaler/scale-down-when"
 const DeploymentAnnotationScaleTo = "prometheusScaler/scale-to"
+const DeploymentAnnotationScaleRelative = "prometheusScaler/scale-relative"
 
 var log = logging.MustGetLogger("prometheus-autoscaler")
 
@@ -73,6 +74,11 @@ type DirectScalable struct {
 	scaleTo *govaluate.EvaluableExpression
 }
 
+type RelativeScalable struct {
+	BaseScalable
+	scaleRelative *govaluate.EvaluableExpression
+}
+
 func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	var err error
 	var ret Scalable
@@ -81,10 +87,12 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 	scaleUpWhen := deployment.Annotations[DeploymentAnnotationScaleUpWhen]
 	scaleDownWhen := deployment.Annotations[DeploymentAnnotationScaleDownWhen]
 	scaleTo := deployment.Annotations[DeploymentAnnotationScaleTo]
+	scaleRelative := deployment.Annotations[DeploymentAnnotationScaleRelative]
 
 	log.Debugf("scaleUpWhen: %v", scaleUpWhen)
 	log.Debugf("scaleDownWhen: %v", scaleDownWhen)
 	log.Debugf("scaleTo: %v", scaleTo)
+	log.Debugf("scaleRelative: %v", scaleRelative)
 
 	if scaleUpWhen != "" && scaleDownWhen != "" {
 		scalable := StepScalable{}
@@ -109,6 +117,16 @@ func NewScalable(deployment v1beta1.Deployment) (Scalable, error) {
 
 		if err != nil {
 			return nil, fmt.Errorf("exprScaleTo: %v", err)
+		}
+
+		ret = &scalable
+	} else if scaleRelative != "" {
+		scalable := RelativeScalable{}
+
+		scalable.scaleRelative, err = govaluate.NewEvaluableExpression(scaleRelative)
+
+		if err != nil {
+			return nil, fmt.Errorf("exprScaleRelative: %v", err)
 		}
 
 		ret = &scalable
@@ -153,6 +171,8 @@ func CalculateNewScale(scalable Scalable, result float64) (int64, error) {
 		return calculateStepScale(s, result, parameters)
 	case *DirectScalable:
 		return calculateDirectScale(s, result, parameters)
+	case *RelativeScalable:
+		return calculateRelativeScale(s, result, parameters)
 	}
 
 	return 0, fmt.Errorf("Scalable is an unknown type: %v", scalable)
@@ -210,6 +230,35 @@ func calculateDirectScale(s *DirectScalable, result float64, parameters map[stri
 		}
 	} else {
 		return 0, fmt.Errorf("Can't cast %v to int64", scaleTo)
+	}
+
+	return newScale, nil
+}
+
+func calculateRelativeScale(s *RelativeScalable, result float64, parameters map[string]interface{}) (int64, error) {
+	scaleRelative, err := s.scaleRelative.Evaluate(parameters)
+
+	if err != nil {
+		return 0, fmt.Errorf("exprScaleRelative.Evaluate: %v", err)
+	}
+
+	// scale up or down
+	log.Debugf("scaleRelative: %v", scaleRelative)
+
+	var newScale int64
+
+	if f, ok := scaleRelative.(float64); ok {
+		// dangerous due to float representation. where's my round() function go?
+		newScale = s.curScale + int64(math.Floor(f+.5))
+
+		if newScale > s.maxScale {
+			newScale = s.maxScale
+		}
+		if newScale < s.minScale {
+			newScale = s.minScale
+		}
+	} else {
+		return 0, fmt.Errorf("Can't cast %v to int64", scaleRelative)
 	}
 
 	return newScale, nil

@@ -16,6 +16,9 @@ var _trueExpr, _ = govaluate.NewEvaluableExpression("true")
 var _falseExpr, _ = govaluate.NewEvaluableExpression("false")
 
 var _fiveExpr, _ = govaluate.NewEvaluableExpression("5")
+var _zeroExpr, _ = govaluate.NewEvaluableExpression("0")
+var _minusOneExpr, _ = govaluate.NewEvaluableExpression("-1")
+var _plusOneExpr, _ = govaluate.NewEvaluableExpression("1")
 
 var _testCases = []testCase{
 	// step scalable
@@ -129,6 +132,67 @@ var _testCases = []testCase{
 				maxScale: 4,
 			},
 			scaleTo: _fiveExpr,
+		},
+	},
+	// relative scalable
+	{
+		description:   "Scales relative zero",
+		expectedScale: 5,
+		scalable: &RelativeScalable{
+			BaseScalable: BaseScalable{
+				minScale: 4,
+				maxScale: 6,
+				curScale: 5,
+			},
+			scaleRelative: _zeroExpr,
+		},
+	},
+	{
+		description:   "Scales relative down",
+		expectedScale: 4,
+		scalable: &RelativeScalable{
+			BaseScalable: BaseScalable{
+				minScale: 4,
+				maxScale: 6,
+				curScale: 5,
+			},
+			scaleRelative: _minusOneExpr,
+		},
+	},
+	{
+		description:   "Scales relative up",
+		expectedScale: 6,
+		scalable: &RelativeScalable{
+			BaseScalable: BaseScalable{
+				minScale: 4,
+				maxScale: 6,
+				curScale: 5,
+			},
+			scaleRelative: _plusOneExpr,
+		},
+	},
+	{
+		description:   "Scaling relatively won't go below min",
+		expectedScale: 6,
+		scalable: &RelativeScalable{
+			BaseScalable: BaseScalable{
+				minScale: 6,
+				maxScale: 9,
+				curScale: 6,
+			},
+			scaleRelative: _minusOneExpr,
+		},
+	},
+	{
+		description:   "Scaling relatively won't go over max",
+		expectedScale: 4,
+		scalable: &RelativeScalable{
+			BaseScalable: BaseScalable{
+				minScale: 2,
+				maxScale: 4,
+				curScale: 4,
+			},
+			scaleRelative: _plusOneExpr,
 		},
 	},
 }
