@@ -40,6 +40,19 @@ With direct scaling you provide a query and one condition.  The replica count is
 
 Scale up, scale down and scale to conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is exposed to the expression as a parameter named `result`.
 
+#### Relative Scaling
+
+With relative scaling you provide a query and one condition.  The replica count is set to the value retrieved from evaluating the `scale-relative` expression and adding it to the current number of replicas.
+
+```
+    prometheusScaler/prometheus-query: "time() % 2 - 1"
+    prometheusScaler/min-scale: "2"
+    prometheusScaler/max-scale: "5"
+    prometheusScaler/scale-relative: "result"
+```
+
+Scale up, scale down and scale to conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is exposed to the expression as a parameter named `result`.
+
 #### Command Line Usage
 
 ```
