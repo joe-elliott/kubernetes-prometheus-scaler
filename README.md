@@ -49,7 +49,7 @@ With relative scaling you provide a query and one condition.  The replica count 
     prometheusScaler/scale-relative: "result"
 ```
 
-Scale up, scale down, scale relative and scale to conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from query is exposed to the expression as a parameter named `result`.
+Scale up, scale down, scale relative and scale to conditions use this clever repo https://github.com/Knetic/govaluate.  The value retrieved from the query is exposed to the expression as a parameter named `result`.
 
 #### Command Line Usage
 
@@ -66,7 +66,7 @@ Publishes `prometheusscaler_error_total` on port 8080 at `/metrics`.  You can us
 
 ### Improvements
 
-This repo is still under active development and needs a long list of improvements (but it works!).  Some obvious ones:
+This repo is still under active development and needs a long list of improvements.  Some obvious ones:
 
 - Better logging
 - Obvious Performance Improvements (Don't run scale up query if at max)
@@ -74,4 +74,4 @@ This repo is still under active development and needs a long list of improvement
 - Publish to docker hub once it sucks less
 - Refactor to use go funcs and channels?
 - Add more scaling strategies?
-- Add testing
+- Add more testing
