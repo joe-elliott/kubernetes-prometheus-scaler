@@ -4,7 +4,7 @@ Scale deployments based on prometheus queries
 
 ### How to use
 
-Run this as a pod in your cluster.
+Run this as a pod in your cluster.  The [container image](https://hub.docker.com/r/joeelliott/kubernetes-prometheus-scaler) is available on DockerHub.
 
 Add this label to deployments you want considered for scaling:
 
